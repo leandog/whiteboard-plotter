@@ -1,0 +1,11 @@
+#:import PlotterCanvas plottersim.widgets.plotter_canvas.PlotterCanvas
+#:import Color kivy.graphics.Color
+
+
+<PlotterCanvas>:
+    canvas:
+        Color:
+            rgba: (0.22,0.22,0.22,1)
+        Rectangle:
+            pos: self.x, self.y
+            size: self.width, self.height
