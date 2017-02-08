@@ -41,5 +41,4 @@ class PlotterCanvas(Widget):
         return ((x / print_width) * fit_width, (y / print_height) * fit_height)
 
     def on_size(self, *args, **kwargs):
-        #super(PlotterCanvas, self).on_size(*args, **kwargs)
         self._redraw_model()

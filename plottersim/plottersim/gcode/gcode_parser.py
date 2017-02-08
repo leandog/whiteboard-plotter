@@ -16,20 +16,20 @@ class GcodeParser:
         # read the gcode file
         with open(path, 'r') as f:
             # init line counter
-            self.lineNb = 0
+            self.line_number = 0
             # for all lines
             for line in f:
                 # inc line counter
-                self.lineNb += 1
+                self.line_number += 1
                 # remove trailing linefeed
                 self.line = line.rstrip()
                 # parse a line
-                self.parseLine()
+                self.parse_line()
             
-        self.postProcess()
+        self.post_process()
         return self.model
         
-    def parseLine(self):
+    def parse_line(self):
         # strip comments:
         bits = self.line.split(';',1)
         if (len(bits) > 1):
@@ -51,7 +51,7 @@ class GcodeParser:
             else:
                 self.warn("Unknown code '%s'"%code)
         
-    def parseArgs(self, args):
+    def parse_args(self, args):
         dic = {}
         if args:
             bits = args.split()
@@ -68,7 +68,7 @@ class GcodeParser:
         
     def parse_G1(self, args, type="G1"):
         # G1: Controlled move
-        self.do_G1(self.parseArgs(args), type)
+        self.do_G1(self.parse_args(args), type)
         
     def parse_G20(self, args):
         # G20: Set Units to Inches
@@ -81,19 +81,19 @@ class GcodeParser:
         
     def parse_G28(self, args):
         # G28: Move to Origin
-        self.do_G28(self.parseArgs(args))
+        self.do_G28(self.parse_args(args))
         
     def parse_G90(self, args):
         # G90: Set to Absolute Positioning
-        self.model.setRelative(False)
+        self.model.set_relative(False)
         
     def parse_G91(self, args):
         # G91: Set to Relative Positioning
-        self.model.setRelative(True)
+        self.model.set_relative(True)
         
     def parse_G92(self, args):
         # G92: Set Position
-        self.do_G92(self.parseArgs(args))
+        self.do_G92(self.parse_args(args))
 
     def do_G1(self, args, type):
         # G0/G1: Rapid/Controlled move
@@ -102,7 +102,7 @@ class GcodeParser:
         # update changed coords
         for axis in args.keys():
             if axis in coords:
-                if self.model.isRelative:
+                if self.model.is_relative:
                     coords[axis] += args[axis]
                 else:
                     coords[axis] = args[axis]
@@ -119,9 +119,9 @@ class GcodeParser:
         seg = Segment(
             type,
             absolute,
-            self.lineNb,
+            self.line_number,
             self.line)
-        self.model.addSegment(seg)
+        self.model.add_segment(seg)
         # update model coords
         self.model.relative = coords
         
@@ -146,13 +146,13 @@ class GcodeParser:
                 self.warn("Unknown axis '%s'"%axis)
         
     def warn(self, msg):
-        print("[WARN] Line {}: {} (Text:'{}')".format(self.lineNb, msg, self.line))
+        print("[WARN] Line {}: {} (Text:'{}')".format(self.line_number, msg, self.line))
         
     def error(self, msg):
-        print("[ERROR] Line {}: {} (Text:'{}')".format(self.lineNb, msg, self.line))
-        raise Exception("[ERROR] Line {}: {} (Text:'{}')".format(self.lineNb, msg, self.line))
+        print("[ERROR] Line {}: {} (Text:'{}')".format(self.line_number, msg, self.line))
+        raise Exception("[ERROR] Line {}: {} (Text:'{}')".format(self.line_number, msg, self.line))
         
-    def classifySegments(self):
+    def classify_segments(self):
         # apply intelligence, to classify segments
         
         # start model at 0
@@ -205,7 +205,7 @@ class GcodeParser:
             coords = seg.coords
             
             
-    def splitLayers(self):
+    def split_layers(self):
         # split segments into previously detected layers
         
         # start model at 0
@@ -237,7 +237,7 @@ class GcodeParser:
         
         self.topLayer = len(self.model.layers)-1
         
-    def calcMetrics(self):
+    def calc_metrics(self):
         # init distances and extrudate
         self.model.distance = 0
         self.model.extrudate = 0
@@ -290,7 +290,7 @@ class GcodeParser:
             self.model.distance += layer.distance
             self.model.extrudate += layer.extrudate
         
-    def postProcess(self):
-        self.classifySegments()
-        self.splitLayers()
-        self.calcMetrics()
+    def post_process(self):
+        self.classify_segments()
+        self.split_layers()
+        self.calc_metrics()

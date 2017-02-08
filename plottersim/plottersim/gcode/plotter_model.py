@@ -16,7 +16,7 @@ class PlotterModel:
             "Z":0.0,
             "E":0.0}
         # if true, args for move (G1) are given relatively (default: absolute)
-        self.isRelative = False
+        self.is_relative = False
     
         # the segments
         self.segments = []
@@ -25,8 +25,8 @@ class PlotterModel:
         self.extrudate = None
         self.bbox = None
         
-    def setRelative(self, isRelative):
-        self.isRelative = isRelative
+    def set_relative(self, is_relative):
+        self.is_relative = is_relative
         
-    def addSegment(self, segment):
+    def add_segment(self, segment):
         self.segments.append(segment)
