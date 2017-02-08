@@ -13,7 +13,7 @@ class PlotterCanvas(Widget):
         self.gcode_model = None
 
     def draw_gcode(self, file_path):
-        self.gcode_model = self.gcode_parser.parseFile(file_path)
+        self.gcode_model = self.gcode_parser.parse_file(file_path)
         self._redraw_model()
 
     def _redraw_model(self):

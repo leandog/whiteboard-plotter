@@ -11,4 +11,3 @@ class PlotterScreen(Screen):
     def _initialize(self, dt):
         self.ids.plotter_canvas.draw_gcode('/Users/garyjohnson/Desktop/test.gcode')
 
-
