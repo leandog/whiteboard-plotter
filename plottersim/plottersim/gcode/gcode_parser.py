@@ -1,16 +1,61 @@
+import os
+import pty
 import time
 import math
+import threading
 
 from plottersim.gcode.bbox import BBox
 from plottersim.gcode.layer import Layer
 from plottersim.gcode.segment import Segment
-from plottersim.gcode.plotter_model import PlotterModel
+import plottersim.gcode.gcode_commands as gcode_commands
 
 
 class GcodeParser:
     
-    def __init__(self):
-        self.model = PlotterModel()
+    def __init__(self, model):
+        self.model = model
+
+        self._stop = threading.Event()
+        self.parsing_thread = None
+
+    def __del__(self):
+        self.stop_parsing()
+
+    def stop_parsing(self):
+        self._stop.set()
+        self.parsing_thread = None
+
+    def start_reading_serial(self):
+        self.master_pty, self.slave_pty = pty.openpty()
+        print('listening at {}'.format(os.ttyname(self.slave_pty)))
+
+        self._stop.clear()
+        self.parsing_thread = threading.Thread(target=self.read_serial)
+        self.parsing_thread.daemon = True
+        self.parsing_thread.start()
+
+    def read_serial(self):
+        input_buffer = ''
+        self.line_number = 0
+        while True:
+            new_bytes = os.read(self.master_pty, 1024)
+            input_buffer += new_bytes.decode('utf-8')
+
+            last_new_line = input_buffer.rfind('\n')
+            processing = input_buffer[:last_new_line+1]
+            input_buffer = input_buffer[last_new_line+1:]
+            for line in processing.splitlines(True):
+                self.line_number += 1
+                self.line = line.rstrip()
+                self.parse_line()
+            
+
+    def parse_file_async(self, path):
+        self._stop.clear()
+        self._update.clear()
+        self.parsing_thread = threading.Thread(target=self.parse_file, args=[path])
+        self.parsing_thread.daemon = True
+        self.parsing_thread.start()
         
     def parse_file(self, path):
         # read the gcode file
@@ -25,9 +70,9 @@ class GcodeParser:
                 self.line = line.rstrip()
                 # parse a line
                 self.parse_line()
+                time.sleep(0.01)
             
         self.post_process()
-        return self.model
         
     def parse_line(self):
         # strip comments:
@@ -38,112 +83,32 @@ class GcodeParser:
         # extract & clean command
         command = bits[0].strip()
         
-        # TODO strip logical line number & checksum
+        checksum_index = command.rfind('*')
+        if checksum_index > 0:
+            command = command[:checksum_index]
         
         # code is fist word, then args
-        comm = command.split(None, 1)
-        code = comm[0] if (len(comm)>0) else None
-        args = comm[1] if (len(comm)>1) else None
-        
-        if code:
-            if hasattr(self, "parse_"+code):
-                getattr(self, "parse_"+code)(args)
-            else:
-                self.warn("Unknown code '%s'"%code)
-        
-    def parse_args(self, args):
-        dic = {}
-        if args:
-            bits = args.split()
-            for bit in bits:
-                letter = bit[0]
-                coord = float(bit[1:])
-                dic[letter] = coord
-        return dic
+        code = None
+        args = None
 
-    def parse_G0(self, args):
-        # G0: Rapid move
-        # same as a controlled move for us (& reprap FW)
-        self.G1(args, "G0")
-        
-    def parse_G1(self, args, type="G1"):
-        # G1: Controlled move
-        self.do_G1(self.parse_args(args), type)
-        
-    def parse_G20(self, args):
-        # G20: Set Units to Inches
-        self.error("Unsupported & incompatible: G20: Set Units to Inches")
-        
-    def parse_G21(self, args):
-        # G21: Set Units to Millimeters
-        # Default, nothing to do
-        pass
-        
-    def parse_G28(self, args):
-        # G28: Move to Origin
-        self.do_G28(self.parse_args(args))
-        
-    def parse_G90(self, args):
-        # G90: Set to Absolute Positioning
-        self.model.set_relative(False)
-        
-    def parse_G91(self, args):
-        # G91: Set to Relative Positioning
-        self.model.set_relative(True)
-        
-    def parse_G92(self, args):
-        # G92: Set Position
-        self.do_G92(self.parse_args(args))
+        if command[:1] == 'N':
+            comm = command.split(None, 2)
+            print(comm)
+            code = comm[1] if (len(comm)>1) else None
+            args = comm[2] if (len(comm)>2) else None
+        else:
+            comm = command.split(None, 1)
+            print(comm)
+            code = comm[0] if (len(comm)>0) else None
+            args = comm[1] if (len(comm)>1) else None
 
-    def do_G1(self, args, type):
-        # G0/G1: Rapid/Controlled move
-        # clone previous coords
-        coords = dict(self.model.relative)
-        # update changed coords
-        for axis in args.keys():
-            if axis in coords:
-                if self.model.is_relative:
-                    coords[axis] += args[axis]
-                else:
-                    coords[axis] = args[axis]
-            else:
-                self.warn("Unknown axis '%s'"%axis)
-        # build segment
-        absolute = {
-            "X": self.model.offset["X"] + coords["X"],
-            "Y": self.model.offset["Y"] + coords["Y"],
-            "Z": self.model.offset["Z"] + coords["Z"],
-            "F": coords["F"],   # no feedrate offset
-            "E": self.model.offset["E"] + coords["E"]
-        }
-        seg = Segment(
-            type,
-            absolute,
-            self.line_number,
-            self.line)
-        self.model.add_segment(seg)
-        # update model coords
-        self.model.relative = coords
-        
-    def do_G28(self, args):
-        # G28: Move to Origin
-        self.warn("G28 unimplemented")
-        
-    def do_G92(self, args):
-        # G92: Set Position
-        # this changes the current coords, without moving, so do not generate a segment
-        
-        # no axes mentioned == all axes to 0
-        if not len(args.keys()):
-            args = {"X":0.0, "Y":0.0, "Z":0.0, "E":0.0}
-        # update specified axes
-        for axis in args.keys():
-            if axis in self.model.offset:
-                # transfer value from relative to offset
-                self.model.offset[axis] += self.model.relative[axis] - args[axis]
-                self.model.relative[axis] = args[axis]
-            else:
-                self.warn("Unknown axis '%s'"%axis)
+        response = 'ok'
+        if code and hasattr(gcode_commands, code):
+            response = getattr(gcode_commands,code)(self,self.model,args)
+        else:
+            self.warn('Unknown code {}'.format(code))
+
+        os.write(self.master_pty, (response + '\n').encode('utf-8'))
         
     def warn(self, msg):
         print("[WARN] Line {}: {} (Text:'{}')".format(self.line_number, msg, self.line))
