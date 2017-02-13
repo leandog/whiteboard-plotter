@@ -1,0 +1,13 @@
+#:import PainterScreen gcodepainter.screens.painter_screen.PainterScreen
+#:import Color kivy.graphics.Color
+
+<PainterScreen>:
+    canvas:
+        Color:
+            rgba: (49.0/255.0, 47.0/255.0, 47.0/255.0, 1)
+        Rectangle:
+            pos: self.x, self.y
+            size: self.width, self.height
+    PainterWidget:
+        pos: self.x, self.y
+        size: self.width, self.height
