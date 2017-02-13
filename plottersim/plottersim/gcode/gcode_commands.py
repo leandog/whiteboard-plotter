@@ -97,7 +97,7 @@ def G92(parser, model, args):
 
 def M105(parser, model, args):
     # M105: Get extruder temperature
-    return 'ok T:0 B:0'
+    return OK + ' T:0 B:0'
 
 def _parse_args(args):
     dic = {}

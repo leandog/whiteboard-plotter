@@ -3,11 +3,14 @@ from pydispatch import dispatcher
 from kivy.uix.widget import Widget
 from kivy.graphics.vertex_instructions import Line,Rectangle
 from kivy.graphics import Color
-from kivy.clock import mainthread
+from kivy.clock import mainthread, Clock
 
 from plottersim.gcode.plotter_model import PlotterModel
 from plottersim.gcode.gcode_parser import GcodeParser
 
+PLOTTER_WIDTH = 3000.0
+PLOTTER_HEIGHT = 1000.0
+PEN_DIAMETER = 2.0
 
 class PlotterCanvas(Widget):
 
@@ -19,6 +22,7 @@ class PlotterCanvas(Widget):
         dispatcher.connect(self.on_segment_added, signal='SEGMENT_ADDED', sender=dispatcher.Any)
 
         self._clear_canvas()
+        Clock.schedule_once(self._initialize)
     
     @mainthread
     def on_segment_added(self, *args, **kwargs):
@@ -28,19 +32,27 @@ class PlotterCanvas(Widget):
             Color(74.0/255.0, 1.0/255.0, 63.0/255.0)
             coords = map(lambda x: self._relative_coords(x), [previous_segment, current_segment])
             flat_points = [item for sublist in coords for item in sublist]
-            Line(points=flat_points, width=0.5)
+            pen_width = PEN_DIAMETER * self._drawing_scale()
+            Line(points=flat_points, width=pen_width)
 
-    def draw_gcode(self, file_path):
-        #self.gcode_parser.parse_file_async(file_path)
+    def _initialize(self, *args, **kwargs):
         self.gcode_parser.start_reading_serial()
-        #self._redraw_model()
+
+    def on_size(self, *args, **kwargs):
+        self._redraw_model()
 
     def _clear_canvas(self):
         with self.canvas:
             self.canvas.clear()
             Color(246.0/255.0, 251.0/255.0, 247.0/255.0, 1)
-            Rectangle(pos=(self.x,self.y), size=(self.width, self.height))
-
+            print_width = 3000.0 #self.plotter_model.bbox.xmax
+            print_height = 1000.0 #self.plotter_model.bbox.ymax
+            print_ratio = print_width / print_height
+            screen_ratio = self.width / self.height
+            
+            fit_width, fit_height = (print_width * self.height / print_height, self.height) if screen_ratio > print_ratio else (self.width, print_height * self.width / print_width)
+            y = ((self.height/2)-(fit_height / 2))
+            Rectangle(pos=(self.x, y), size=(fit_width, fit_height))
 
     def _redraw_model(self):
         self._clear_canvas()
@@ -53,24 +65,29 @@ class PlotterCanvas(Widget):
             layers = self.plotter_model.layers if self.plotter_model.layers else []
             for layer in layers:
                 coords = map(lambda x: self._relative_coords(x), layer.segments)
-                flat_points = [item for sublist in coords for item in sublist]
-                Line(points=flat_points, width=1.0)
+                pen_width = PEN_DIAMETER * self._drawing_scale()
+                Line(points=flat_points, width=pen_width)
 
     def _relative_coords(self, segment): 
         coords = { 'X':0.0, 'Y':0.0 }
         if segment:
             coords = segment.coords
 
-        print_width = 200.0 #self.plotter_model.bbox.xmax
-        print_height = 200.0 #self.plotter_model.bbox.ymax
-        print_ratio = print_width / print_height
-        screen_ratio = self.width / self.height
-        
-        fit_width, fit_height = (print_width * self.height / print_height, self.height) if screen_ratio > print_ratio else (self.width, print_height * self.width / print_width)
+        (draw_x,draw_y,draw_width,draw_height) = self._drawing_bounds()
 
         x = coords['X']
-        y = coords['Y']
-        return ((x / print_width) * fit_width, (y / print_height) * fit_height)
+        #invert y for kivy coords
+        y = PLOTTER_HEIGHT - coords['Y']
 
-    def on_size(self, *args, **kwargs):
-        self._redraw_model()
+        return ((x / PLOTTER_WIDTH) * draw_width, draw_y + ((y / PLOTTER_HEIGHT) * draw_height))
+
+    def _drawing_bounds(self):
+        print_ratio = PLOTTER_WIDTH / PLOTTER_HEIGHT
+        screen_ratio = self.width / self.height
+        fit_width, fit_height = (PLOTTER_WIDTH * self.height / PLOTTER_HEIGHT, self.height) if screen_ratio > print_ratio else (self.width, PLOTTER_HEIGHT * self.width / PLOTTER_WIDTH)
+        y = ((self.height/2)-(fit_height / 2))
+        return (self.x,y,fit_width,fit_height)
+
+    def _drawing_scale(self):
+        (x,y,width,height) = self._drawing_bounds()
+        return width / PLOTTER_WIDTH
