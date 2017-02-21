@@ -3,6 +3,7 @@ import pty
 import time
 import math
 import threading
+import binascii
 
 from plottersim.gcode.bbox import BBox
 from plottersim.gcode.layer import Layer
@@ -73,7 +74,15 @@ class GcodeParser:
                 time.sleep(0.01)
             
         self.post_process()
-        
+
+    def checksum(self, command):
+        checksum = 0
+        for char in command:
+            byte_char = char.encode('utf-8')
+            int_char = int.from_bytes(byte_char, 'big')
+            checksum  = checksum ^ int_char
+        return checksum
+
     def parse_line(self):
         # strip comments:
         bits = self.line.split(';',1)
@@ -85,7 +94,10 @@ class GcodeParser:
         
         checksum_index = command.rfind('*')
         if checksum_index > 0:
+            checksum = command[checksum_index+1:]
             command = command[:checksum_index]
+            print('checksum: {}, command: {}'.format(checksum, command))
+            print('calculated checksum: {}'.format(self.checksum(command)))
         
         # code is fist word, then args
         code = None

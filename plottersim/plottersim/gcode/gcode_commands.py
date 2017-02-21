@@ -5,6 +5,18 @@ from plottersim.gcode.segment import Segment
 
 OK = 'ok'
 
+def G00(parser, model, args):
+    return G0_G1(parser, model, args, 'G0')
+
+def G01(parser, model, args):
+    return G0_G1(parser, model, args, 'G0')
+
+def G02(parser, model, args):
+    return G0_G1(parser, model, args, 'G0')
+
+def G03(parser, model, args):
+    return G0_G1(parser, model, args, 'G0')
+
 def G0(parser, model, args):
     # G0: Rapid move
     # same as a controlled move for us (& reprap FW)
