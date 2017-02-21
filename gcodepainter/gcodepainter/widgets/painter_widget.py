@@ -3,26 +3,20 @@ from random import random
 from kivy.graphics import Color, Ellipse, Line, Rectangle
 from kivy.uix.widget import Widget
 from kivy.clock import mainthread, Clock
+from pydispatch import dispatcher
 
 
 PLOTTER_WIDTH=3000
 PLOTTER_HEIGHT=1000
-PORT='/dev/tty.usbmodem1461'
 
 class PainterWidget(Widget):
 
     def __init__(self, **kwargs):
         super(PainterWidget, self).__init__(**kwargs)
-        self.plotter = serial.Serial(PORT)
-        self.plotter.write(b'G90\n')
-
         Clock.schedule_once(self._initialize)
 
     def _initialize(self, *args, **kwargs):
         self._clear_canvas()
-
-    def __del__(self):
-        self.plotter.close()
 
     def _clear_canvas(self):
         with self.canvas:
@@ -42,12 +36,14 @@ class PainterWidget(Widget):
             touch.ud['line'] = Line(points=(touch.x, touch.y))
 
         x,y = self._relative_coords((touch.x, touch.y))
-        self.plotter.write('G1 X{0:.3f} Y{1:.3f}\n'.format(x,y).encode('UTF-8'))
+
+        dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y)
 
     def on_touch_move(self, touch):
         touch.ud['line'].points += [touch.x, touch.y]
         x,y = self._relative_coords((touch.x, touch.y))
-        self.plotter.write('G1 X{0:.3f} Y{1:.3f}\n'.format(x,y).encode('UTF-8'))
+
+        dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y)
 
     def _drawing_bounds(self):
         print_ratio = PLOTTER_WIDTH / PLOTTER_HEIGHT
