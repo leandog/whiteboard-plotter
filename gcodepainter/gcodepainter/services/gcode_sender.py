@@ -4,8 +4,8 @@ import serial
 import threading
 from queue import Queue
 
-PORT='/dev/ttys002'
-#PORT='/dev/tty.usbmodem1441'
+#PORT='/dev/ttys001'
+PORT='/dev/tty.usbmodem1461'
 SPEED=4800.0
 
 class GcodeSender(object):
@@ -46,6 +46,9 @@ class GcodeSender(object):
         self.plotter = serial.Serial(PORT, 115200, timeout=1)
 
         while True:
+            if not self._read_line().startswith('wait'):
+                continue
+
             while not self.command_queue.empty():
                 command = self.command_queue.get_nowait()
                 self.command_queue.task_done()
@@ -59,15 +62,24 @@ class GcodeSender(object):
                         self.line_number = self.line_number-1
                         self._send_line(command)
                         response = self._read_line()
-                    elif response.startswith('rs'):
+                    elif response.startswith('Resend:{}'.format(self.line_number-1)):
+                        print('resend request: {}'.format(response))
+                        self.line_number = self.line_number-1
+                        self._send_line(command)
+                        response = self._read_line()
+                    elif response.startswith('rs') or response.startswith('Resend'):
                         raise Exception('requested resend of some other line number: {}'.format(response))
                     elif response.startswith('!!'):
                         raise Exception('printer fault')
                     elif response.startswith('//'):
                         print('comment: {}'.format(response))
                         response = self._read_line()
+                    elif response.startswith('wait'):
+                        break
                     else:
-                        raise Exception('unknown response: {}'.format(response))
+                        print('unknown response: {}'.format(response))
+                        response = self._read_line()
+                        #raise Exception('unknown response: {}'.format(response))
 
             time.sleep(0.5)
 

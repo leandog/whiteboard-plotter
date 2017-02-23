@@ -63,7 +63,7 @@ class PainterWidget(Widget):
         #invert y for kivy coords
         y = PLOTTER_HEIGHT - coords['Y']
 
-        return ((x / PLOTTER_WIDTH) * draw_width, draw_y + ((y / PLOTTER_HEIGHT) * draw_height))
+        return ((x / draw_width) * PLOTTER_WIDTH, ((y / draw_height) * PLOTTER_HEIGHT)-draw_y)
 
     def on_size(self, *args, **kwargs):
         self._clear_canvas()
