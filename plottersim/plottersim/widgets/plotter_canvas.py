@@ -45,8 +45,8 @@ class PlotterCanvas(Widget):
         with self.canvas:
             self.canvas.clear()
             Color(246.0/255.0, 251.0/255.0, 247.0/255.0, 1)
-            print_width = 3000.0 #self.plotter_model.bbox.xmax
-            print_height = 1000.0 #self.plotter_model.bbox.ymax
+            print_width = 3000.0
+            print_height = 1000.0
             print_ratio = print_width / print_height
             screen_ratio = self.width / self.height
             
@@ -62,11 +62,10 @@ class PlotterCanvas(Widget):
 
         with self.canvas:
             Color(74.0/255.0, 1.0/255.0, 63.0/255.0)
-            layers = self.plotter_model.layers if self.plotter_model.layers else []
-            for layer in layers:
-                coords = map(lambda x: self._relative_coords(x), layer.segments)
-                pen_width = PEN_DIAMETER * self._drawing_scale()
-                Line(points=flat_points, width=pen_width)
+            coords = map(lambda x: self._relative_coords(x), self.plotter_model.segments)
+            flat_points = [item for sublist in coords for item in sublist]
+            pen_width = PEN_DIAMETER * self._drawing_scale()
+            Line(points=flat_points, width=pen_width)
 
     def _relative_coords(self, segment): 
         coords = { 'X':0.0, 'Y':0.0 }

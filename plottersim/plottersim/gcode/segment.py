@@ -7,8 +7,7 @@ class Segment:
         self.line = line
         self.style = None
         self.layerIdx = None
-        self.distance = None
-        self.extrudate = None
+        self.servo_pwm = None
 
     def __str__(self):
-        return "<Segment: type=%s, lineNb=%d, style=%s, layerIdx=%d, distance=%f, extrudate=%f>"%(self.type, self.lineNb, self.style, self.layerIdx, self.distance, self.extrudate)
+        return "<Segment: type=%s, lineNb=%d, style=%s, layerIdx=%d, servo_pwm=%d>"%(self.type, self.lineNb, self.style, self.layerIdx, self.servo_pwm)

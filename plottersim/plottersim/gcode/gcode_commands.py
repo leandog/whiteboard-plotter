@@ -1,6 +1,4 @@
 from pydispatch import dispatcher
-from plottersim.gcode.bbox import BBox
-from plottersim.gcode.layer import Layer
 from plottersim.gcode.segment import Segment
 
 OK = 'ok'
@@ -44,9 +42,7 @@ def G0_G1(parser, model, args, type):
     absolute = {
         "X": model.offset["X"] + coords["X"],
         "Y": model.offset["Y"] + coords["Y"],
-        "Z": model.offset["Z"] + coords["Z"],
         "F": coords["F"],   # no feedrate offset
-        "E": model.offset["E"] + coords["E"]
     }
     seg = Segment(
         type,
@@ -95,7 +91,8 @@ def G92(parser, model, args):
     
     # no axes mentioned == all axes to 0
     if not len(args.keys()):
-        args = {"X":0.0, "Y":0.0, "Z":0.0, "E":0.0}
+        args = { "X": 0.0, "Y": 0.0 }
+
     # update specified axes
     for axis in args.keys():
         if axis in model.offset:
@@ -107,9 +104,17 @@ def G92(parser, model, args):
 
     return OK
 
-def M105(parser, model, args):
-    # M105: Get extruder temperature
-    return OK + ' T:0 B:0'
+def M340(parser, model, args):
+    args = _parse_args(args)
+    middle_pwm = 1150
+    pwm = int(args['S'])
+
+    z = 0.00
+    if pwm > middle_pwm:
+        z = 2.00
+
+    return
+    #return G0_G1(parser, model, { "Z":z }, 'G0')
 
 def _parse_args(args):
     dic = {}
