@@ -4,11 +4,14 @@ import serial
 import threading
 from queue import Queue
 
-PORT='/dev/ttys009'
+PORT='/dev/ttys005'
 #PORT='/dev/tty.usbmodem1461'
 SPEED=4800.0
 
 class GcodeSender(object):
+
+    PEN_LIFT_PULSE = 1500
+    PEN_DROP_PULSE = 800
 
     def __init__(self, **kwargs):
         super(GcodeSender, self).__init__(**kwargs)
@@ -19,11 +22,25 @@ class GcodeSender(object):
         self.line_number = 1
         self.plotter = None
 
+        dispatcher.connect(self.on_pen_lift, signal='PEN_LIFT', sender=dispatcher.Any)
         dispatcher.connect(self.on_move_to_point, signal='MOVE_TO_POINT', sender=dispatcher.Any)
+        dispatcher.connect(self.on_pen_drop, signal='PEN_DROP', sender=dispatcher.Any)
 
     def on_move_to_point(self, x, y):
         command = 'G1 X{0:.3f} Y{1:.3f} F{2:.1f}'.format(x,y,SPEED)
         self.command_queue.put_nowait(command)
+
+    def on_pen_drop(self):
+        print("pen drop")
+        self.command_queue.put_nowait("M400")
+        self.command_queue.put_nowait("M340 P0 S{}".format(self.PEN_DROP_PULSE))
+        self.command_queue.put_nowait("G4 S1")
+
+    def on_pen_lift(self):
+        print("pen lift")
+        self.command_queue.put_nowait("M400")
+        self.command_queue.put_nowait("M340 P0 S{}".format(self.PEN_LIFT_PULSE))
+        self.command_queue.put_nowait("G4 P500")
 
     def start(self):
         self._stop.clear()

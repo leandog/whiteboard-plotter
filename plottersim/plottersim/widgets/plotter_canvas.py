@@ -11,6 +11,7 @@ from plottersim.gcode.gcode_parser import GcodeParser
 PLOTTER_WIDTH = 3000.0
 PLOTTER_HEIGHT = 1000.0
 PEN_DIAMETER = 2.0
+SERVO_PWM_MIDPOINT = 1150
 
 class PlotterCanvas(Widget):
 
@@ -28,11 +29,14 @@ class PlotterCanvas(Widget):
     def on_segment_added(self, *args, **kwargs):
         previous_segment = kwargs['previous_segment']
         current_segment = kwargs['current_segment']
+        if current_segment.servo_pwm > SERVO_PWM_MIDPOINT:
+            return
+
         with self.canvas:
-            Color(74.0/255.0, 1.0/255.0, 63.0/255.0)
             coords = map(lambda x: self._relative_coords(x), [previous_segment, current_segment])
             flat_points = [item for sublist in coords for item in sublist]
             pen_width = PEN_DIAMETER * self._drawing_scale()
+            Color(74.0/255.0, 1.0/255.0, 63.0/255.0)
             Line(points=flat_points, width=pen_width)
 
     def _initialize(self, *args, **kwargs):

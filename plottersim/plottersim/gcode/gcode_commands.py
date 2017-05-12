@@ -48,7 +48,8 @@ def G0_G1(parser, model, args, type):
         type,
         absolute,
         parser.line_number,
-        parser.line)
+        parser.line,
+        model.servo_pwm)
 
     previous_segment = model.segments[-1] if len(model.segments) > 0 else None
     model.add_segment(seg)
@@ -57,6 +58,9 @@ def G0_G1(parser, model, args, type):
     # update model coords
     model.relative = coords
 
+    return OK
+
+def G4(parser, model, args):
     return OK
 
 def G20(parser, model, args):
@@ -106,15 +110,19 @@ def G92(parser, model, args):
 
 def M340(parser, model, args):
     args = _parse_args(args)
-    middle_pwm = 1150
-    pwm = int(args['S'])
+    servo = int(args['P'])
+    print("args: {}, servo: {}".format(args, servo))
+    if servo == 0:
+        pwm = int(args['S'])
+        print("pwm: {}".format(pwm))
+        model.servo_pwm = pwm
+    else:
+        parser.warn("Ignoring servo # {}".format(servo))
 
-    z = 0.00
-    if pwm > middle_pwm:
-        z = 2.00
+    return OK
 
-    return
-    #return G0_G1(parser, model, { "Z":z }, 'G0')
+def M400(parser, model, args):
+    return OK
 
 def _parse_args(args):
     dic = {}

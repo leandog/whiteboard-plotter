@@ -29,6 +29,11 @@ class PainterWidget(Widget):
             y = ((self.height/2)-(fit_height / 2))
             Rectangle(pos=(self.x, y), size=(fit_width, fit_height))
 
+    def on_touch_up(self, touch):
+        x,y = self._relative_coords((touch.x, touch.y))
+        dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y)
+        dispatcher.send(signal='PEN_LIFT', sender=self)
+
     def on_touch_down(self, touch):
         color = (random(), random(), random())
         with self.canvas:
@@ -38,6 +43,7 @@ class PainterWidget(Widget):
         x,y = self._relative_coords((touch.x, touch.y))
 
         dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y)
+        dispatcher.send(signal='PEN_DROP', sender=self)
 
     def on_touch_move(self, touch):
         touch.ud['line'].points += [touch.x, touch.y]
