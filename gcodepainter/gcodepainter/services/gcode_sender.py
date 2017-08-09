@@ -27,17 +27,18 @@ class GcodeSender(object):
         dispatcher.connect(self.on_pen_drop, signal='PEN_DROP', sender=dispatcher.Any)
 
     def on_move_to_point(self, x, y):
+        print('X{0:.3f} Y{1:.3f}'.format(x,y))
         command = 'G1 X{0:.3f} Y{1:.3f} F{2:.1f}'.format(x,y,SPEED)
         self.command_queue.put_nowait(command)
 
     def on_pen_drop(self):
-        print("pen drop")
+        #print("pen drop")
         self.command_queue.put_nowait("M400")
         self.command_queue.put_nowait("M340 P0 S{}".format(self.PEN_DROP_PULSE))
         self.command_queue.put_nowait("G4 S1")
 
     def on_pen_lift(self):
-        print("pen lift")
+        #print("pen lift")
         self.command_queue.put_nowait("M400")
         self.command_queue.put_nowait("M340 P0 S{}".format(self.PEN_LIFT_PULSE))
         self.command_queue.put_nowait("G4 P500")
@@ -60,6 +61,7 @@ class GcodeSender(object):
     def start_processing(self):
         self.command_queue.put_nowait('M110 N2')
         self.command_queue.put_nowait('G90')
+        self.command_queue.put_nowait('G28')
         self.plotter = serial.Serial(PORT, 115200, timeout=1)
 
         self._read_and_process_and_wait_for_ok(break_on_timeout=True)
@@ -76,7 +78,7 @@ class GcodeSender(object):
     def _send_line(self, line):
         command = 'N{} {} '.format(self.line_number, line)
         command = '{}*{}\n'.format(command, self._checksum(command))
-        print("SEND: {}".format(command))
+        #print("SEND: {}".format(command))
         self.line_number += 1
         self.plotter.write(command.encode('utf-8'))
         
