@@ -2,6 +2,6 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:whitepad.xcodeproj">
+      location = "self:plotty.xcodeproj">
    </FileRef>
 </Workspace>
