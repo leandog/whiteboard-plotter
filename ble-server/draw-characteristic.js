@@ -21,7 +21,7 @@ function DrawCharacteristic(state) {
 util.inherits(DrawCharacteristic, bleno.Characteristic);
 
 DrawCharacteristic.prototype.onWriteRequest = function(data, offset, withoutResponse, callback) {
-    console.log('onWriteRequest');
+    //console.log('onWriteRequest');
     if(offset) {
         console.log("ATTR_NOT_LONG");
         callback(this.RESULT_ATTR_NOT_LONG);
@@ -31,14 +31,12 @@ DrawCharacteristic.prototype.onWriteRequest = function(data, offset, withoutResp
         callback(this.RESULT_INVALID_ATTRIBUTE_LENGTH);
     }
     else {
-        var x = data.readUIntBE(0, 4);
-        var y = data.readUIntBE(4, 4);
-        var timestamp = data.readUIntBE(8, 8);
-        var lift = data.readUIntBE(16, 1);
-        console.log("x: " + x);
-        console.log("y: " + y);
-        console.log("timestamp: " + timestamp);
-        console.log("lift: " + lift);
+        var x = data.readUIntLE(0, 4);
+        var y = data.readUIntLE(4, 4);
+        var timestamp = data.readUIntLE(8, 4);
+        var ratio = data.readUIntLE(12, 4);
+        var lift = data.readUIntLE(16, 1);
+        console.log("x: " + x + " y: " + y + " ratio: " + ratio + " timestamp: " + timestamp + " lift: " + lift);
         callback(this.RESULT_SUCCESS);
     }
 };

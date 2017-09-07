@@ -35,5 +35,5 @@ bleno.on('disconnect', function(address) {
 });
 
 draw.on('writeRequest', function(data, offset, writeWithoutResponse, callback) {
-  console.log('data: ' + data.toString('hex'));
+ console.log('data: ' + data.toString('hex'));
 });
