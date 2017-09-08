@@ -104,6 +104,7 @@ class Line: NSObject {
     // MARK: Drawing
     
     func drawInContext(_ context: CGContext, isDebuggingEnabled: Bool, usePreciseLocation: Bool) {
+        
         var maybePriorPoint: LinePoint?
         
         for point in points {
@@ -111,7 +112,7 @@ class Line: NSObject {
                 maybePriorPoint = point
                 continue
             }
-            
+        
             // This color will used by default for `.Standard` touches.
             var color = UIColor.black
             

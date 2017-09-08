@@ -8,11 +8,23 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, BleWhiteboardDelegate {
+   
+    let notificationCenter = NotificationCenter.default
+    var lastTouch: UITouch?
+    
     // MARK: Properties
-    
     var visualizeAzimuth = false
+    var whiteboard:BleWhiteboard?
     
+    func onWhiteboardConnected() {
+        
+    }
+    
+    func onWhiteboardDisconnected(){
+        
+    }
+
     let reticleView: ReticleView = {
         let view = ReticleView(frame: CGRect.null)
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -20,20 +32,37 @@ class ViewController: UIViewController {
         
         return view
     }()
-    
+
     var canvasView: CanvasView {
         return view as! CanvasView
     }
     
     // MARK: View Life Cycle
-    
     override func viewDidLoad() {
+        self.whiteboard = BleWhiteboard(self)
+        self.whiteboard?.startScan()
         canvasView.addSubview(reticleView)
     }
     
-    // MARK: Touch Handling
+    func postTouchNotification(touch: UITouch, lift: Bool) {
+        let view = touch.view!
+        let frame = view.frame
+        let ratio = frame.width / frame.height
+        
+        let location = touch.preciseLocation(in: view)
+        
+        let userInfo: [String:Any] = ["x": location.x / frame.width, "y": location.y / frame.height, "timestamp": touch.timestamp, "lift": lift, "ratio": ratio]
+        self.notificationCenter.post(name: Notification.Name.init("DRAW_POINT"), object: self, userInfo: userInfo)
+    }
     
+    // MARK: Touch Handling
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        if let touch = touches.first {
+            self.lastTouch = touch
+            postTouchNotification(touch: touch, lift: false)
+        }
+        
         canvasView.drawTouches(touches, withEvent: event)
         
         if visualizeAzimuth {
@@ -47,6 +76,14 @@ class ViewController: UIViewController {
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        for touch in touches {
+            if self.lastTouch != nil && self.lastTouch! == touch {
+                postTouchNotification(touch: touch, lift: false)
+                break
+            }
+        }
+        
         canvasView.drawTouches(touches, withEvent: event)
         
         if visualizeAzimuth {
@@ -64,6 +101,15 @@ class ViewController: UIViewController {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        for touch in touches {
+            if self.lastTouch != nil && self.lastTouch! == touch {
+                postTouchNotification(touch: touch, lift: true)
+                self.lastTouch = nil
+                break
+            }
+        }
+        
         canvasView.drawTouches(touches, withEvent: event)
         canvasView.endTouches(touches, cancel: false)
         

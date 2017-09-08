@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		426B25F6B81AC92DB60F96D3 /* Data+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 426B2317DF14B83206186AB5 /* Data+Hex.swift */; };
+		426B26B02CB9602C94D96BF3 /* BleWhiteboardDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 426B25562C94638C11CCD1C2 /* BleWhiteboardDelegate.swift */; };
+		426B2D1742DCE7765462C854 /* BleWhiteboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 426B2B106BFEC5950920E879 /* BleWhiteboard.swift */; };
+		8C3EE1701F424E4300BE6B9D /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C3EE16F1F424E4300BE6B9D /* CoreBluetooth.framework */; };
 		8C6B235A1F3FC6E600586677 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C6B23561F3FC6E600586677 /* CanvasView.swift */; };
 		8C6B235B1F3FC6E600586677 /* CGRect+InPlace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C6B23571F3FC6E600586677 /* CGRect+InPlace.swift */; };
 		8C6B235C1F3FC6E600586677 /* Line.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C6B23581F3FC6E600586677 /* Line.swift */; };
@@ -19,6 +23,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		426B2317DF14B83206186AB5 /* Data+Hex.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Data+Hex.swift"; sourceTree = "<group>"; };
+		426B25562C94638C11CCD1C2 /* BleWhiteboardDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BleWhiteboardDelegate.swift; sourceTree = "<group>"; };
+		426B2B106BFEC5950920E879 /* BleWhiteboard.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BleWhiteboard.swift; sourceTree = "<group>"; };
+		8C3EE16F1F424E4300BE6B9D /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		8C6B23561F3FC6E600586677 /* CanvasView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		8C6B23571F3FC6E600586677 /* CGRect+InPlace.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CGRect+InPlace.swift"; sourceTree = "<group>"; };
 		8C6B23581F3FC6E600586677 /* Line.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Line.swift; sourceTree = "<group>"; };
@@ -37,17 +45,27 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8C3EE1701F424E4300BE6B9D /* CoreBluetooth.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8C3EE16E1F424E4300BE6B9D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8C3EE16F1F424E4300BE6B9D /* CoreBluetooth.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8C960CBA1F3E9071004BDFFE = {
 			isa = PBXGroup;
 			children = (
 				8C960CC51F3E9071004BDFFE /* plotty */,
 				8C960CC41F3E9071004BDFFE /* Products */,
+				8C3EE16E1F424E4300BE6B9D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -72,6 +90,9 @@
 				8C960CCD1F3E9071004BDFFE /* Assets.xcassets */,
 				8C960CCF1F3E9071004BDFFE /* LaunchScreen.storyboard */,
 				8C960CD21F3E9071004BDFFE /* Info.plist */,
+				426B2B106BFEC5950920E879 /* BleWhiteboard.swift */,
+				426B25562C94638C11CCD1C2 /* BleWhiteboardDelegate.swift */,
+				426B2317DF14B83206186AB5 /* Data+Hex.swift */,
 			);
 			path = plotty;
 			sourceTree = "<group>";
@@ -155,6 +176,9 @@
 				8C6B235B1F3FC6E600586677 /* CGRect+InPlace.swift in Sources */,
 				8C6B235A1F3FC6E600586677 /* CanvasView.swift in Sources */,
 				8C6B235C1F3FC6E600586677 /* Line.swift in Sources */,
+				426B2D1742DCE7765462C854 /* BleWhiteboard.swift in Sources */,
+				426B26B02CB9602C94D96BF3 /* BleWhiteboardDelegate.swift in Sources */,
+				426B25F6B81AC92DB60F96D3 /* Data+Hex.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -129,7 +129,7 @@ class ReticleView: UIView {
             path.move(to: CGPoint(x: radius * 0.5, y: 0), transform: transform)
             //CGPathAddLineToPoint(path, &transform, radius * 1.15, 0)
             path.addLine(to: CGPoint(x: radius * 1.15, y: 0), transform: transform)
-            transform = transform.rotated(by: CGFloat(M_PI_2))
+            transform = transform.rotated(by: CGFloat(Double.pi / 2))
         }
         ctx!.addPath(path)
         ctx!.strokePath()
@@ -157,14 +157,14 @@ class ReticleView: UIView {
         var rotationTransform = CGAffineTransform(rotationAngle: azimuthAngle)
         
         // Draw the indicator opposite the azimuth by rotating pi radians, for easy visualization.
-        rotationTransform = rotationTransform.rotated(by: CGFloat(M_PI))
+        rotationTransform = rotationTransform.rotated(by: CGFloat(Double.pi / 2))
         
         /*
             Make the length of the indicator's line representative of the `altitudeAngle`. When the angle is
             zero radians (parallel to the screen surface) the line will be at its longest. At `M_PI`/2 radians,
             only the dot on top of the indicator will be visible directly beneath the touch location.
         */
-        let altitudeRadius = (1.0 - altitudeAngle / CGFloat(M_PI_2)) * radius
+        let altitudeRadius = (1.0 - altitudeAngle / CGFloat(Double.pi / 2)) * radius
         
         var lineTransform = CGAffineTransform(scaleX: altitudeRadius, y: 1)
         lineTransform = lineTransform.concatenating(rotationTransform)

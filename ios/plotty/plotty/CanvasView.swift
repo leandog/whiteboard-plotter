@@ -7,10 +7,10 @@
 */
 
 import UIKit
+import NotificationCenter
+
 
 class CanvasView: UIView {
-    // MARK: Properties
-    
     let isPredictionEnabled = UIDevice.current.userInterfaceIdiom == .pad
     let isTouchUpdatingEnabled = true
     
@@ -204,7 +204,10 @@ class CanvasView: UIView {
     func endTouches(_ touches: Set<UITouch>, cancel: Bool) {
         var updateRect = CGRect.null
         
+
+        
         for touch in touches {
+            
             // Skip over touches that do not correspond to an active line.
             guard let line = activeLines.object(forKey: touch) as? Line else { continue }
             
@@ -245,6 +248,7 @@ class CanvasView: UIView {
             
             switch line.updateWithTouch(touch) {
                 case (true, let updateRect):
+                    // we added touch to line
                     setNeedsDisplay(updateRect)
                 default:
                     ()
@@ -259,7 +263,6 @@ class CanvasView: UIView {
             else {
                 commitLine(line)
             }
-            
         }
     }
     
