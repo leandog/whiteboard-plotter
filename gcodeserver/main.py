@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 
 import os
-import time
-import tty
-import termios
 import sys
 import signal
 import logging
 from pydispatch import dispatcher
-import curses
 import gcode_sender
+import zerorpc
 
 server = None
 
@@ -21,49 +18,46 @@ def signal_handler(signal, frame):
 def exit_on_ctrl_c():
     signal.signal(signal.SIGINT, signal_handler)
 
+class RpcHandler(object):
+    def __init__(self):
+        self.lift = True
+
+    def on_connect(self, data):
+        dispatcher.send(signal='PEN_LIFT', sender=server)
+        dispatcher.send(signal='HOME', sender=server)
+        return "OK"
+
+    def on_disconnect(self, data):
+        dispatcher.send(signal='PEN_LIFT', sender=server)
+        dispatcher.send(signal='HOME', sender=server)
+        return "OK"
+
+    def draw(self, draw_data):
+        print(draw_data)
+
+        x = draw_data['x'] * 1040
+        y = draw_data['y'] * 800
+        dispatcher.send(signal='MOVE_TO_POINT', sender=server, x=x, y=y, speed=9600.0)
+
+        new_lift = draw_data['lift'] == 1
+        if new_lift != self.lift:
+            self.lift = new_lift
+            if self.lift:
+                dispatcher.send(signal='PEN_LIFT', sender=server)
+            else:
+                dispatcher.send(signal='PEN_DROP', sender=server)
+
+        return "OK"
+
 def main():
     exit_on_ctrl_c()
 
     server = gcode_sender.GcodeSender()
     server.start()
 
-    dispatcher.send(signal='HOME', sender=server)
-
-    x,y = 1000.0,200.0
-
-    while True:
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        k = None
-        new_x,new_y = x,y
-        try:
-            tty.setraw(sys.stdin.fileno())
-            k = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        if k=="k":
-            print("up")
-            new_y -= 10
-        elif k=="j":
-            print("down")
-            new_y += 10
-        elif k=="l":
-            print("right")
-            new_x += 10
-        elif k=="h":
-            print("left")
-            new_x -= 10
-        elif k=="q":
-            print("penup")
-            dispatcher.send(signal='PEN_LIFT', sender=server)
-        elif k=="a":
-            print("pendown")
-            dispatcher.send(signal='PEN_DROP', sender=server)
-
-        if x != new_x or y != new_y:
-            dispatcher.send(signal='MOVE_TO_POINT', sender=server, x=new_x, y=new_y, speed=9600.0)
-            x,y = new_x, new_y
-        #time.sleep(100)
+    s = zerorpc.Server(RpcHandler())
+    s.bind("tcp://0.0.0.0:4242")
+    s.run()
 
 if __name__ == '__main__':
     log_levels = {

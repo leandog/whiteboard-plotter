@@ -1,10 +1,16 @@
+#!/usr/bin/env node
+
 var os = require('os');
 var bleno = require('bleno');
+var zerorpc = require("zerorpc");
 var Characteristic = bleno.Characteristic;
 
 var WhiteboardService = require('./whiteboard-service');
 var primaryService = new WhiteboardService();
 var draw = primaryService.drawCharacteristic();
+
+var client = new zerorpc.Client();
+client.connect("tcp://127.0.0.1:4242");
 
 bleno.on('stateChange', function(state) {
     console.log('on -> stateChange: ' + state);
@@ -28,12 +34,21 @@ bleno.on('advertisingStart', function(error) {
 
 bleno.on('accept', function(address) {
     console.log('bluetooth connected: ' + address);
-});
+    client.invoke("on_connect", "test", function(error, res, more) {
+      console.log(res);
+    });
+}.bind(client));
 
 bleno.on('disconnect', function(address) {
     console.log('bluetooth disconnected: ' + address);
+    client.invoke("on_disconnect", "test", function(error, res, more) {
+      console.log(res);
+    });
 });
 
-draw.on('writeRequest', function(data, offset, writeWithoutResponse, callback) {
- console.log('data: ' + data.toString('hex'));
-});
+draw.on('draw', function(drawData) {
+  client.invoke("draw", drawData, function(error, res, more) {
+    console.log(res);
+  });
+}.bind(client));
+
