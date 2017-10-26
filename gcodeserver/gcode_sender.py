@@ -1,4 +1,5 @@
 from pydispatch import dispatcher
+import re
 import time
 import serial
 import threading
@@ -17,6 +18,7 @@ class GcodeSender(object):
         self._stop = threading.Event()
         self.parsing_thread = None
 
+        self.sent_commands = {}
         self.command_queue = Queue()
         self.line_number = 1
         self.plotter = None
@@ -25,12 +27,24 @@ class GcodeSender(object):
         dispatcher.connect(self.on_move_to_point, signal='MOVE_TO_POINT', sender=dispatcher.Any)
         dispatcher.connect(self.on_pen_drop, signal='PEN_DROP', sender=dispatcher.Any)
         dispatcher.connect(self.on_home, signal='HOME', sender=dispatcher.Any)
+        dispatcher.connect(self.on_move_relative, signal='MOVE_RELATIVE', sender=dispatcher.Any)
+        dispatcher.connect(self.on_gcode, signal='GCODE', sender=dispatcher.Any)
+
+    def on_gcode(self, gcode):
+        self.command_queue.put_nowait(gcode)
 
     def on_home(self):
         command = 'G28 X Y'
         self.command_queue.put_nowait(command)
 
+    def on_move_relative(self, x, y, speed=SPEED):
+        self.command_queue.put_nowait("G91")
+        command = 'G1 X{0:.3f} Y{1:.3f} F{2:.1f}'.format(x,y,speed)
+        self.command_queue.put_nowait(command)
+        self.command_queue.put_nowait("G90")
+
     def on_move_to_point(self, x, y, speed=SPEED):
+        self.command_queue.put_nowait("G90")
         command = 'G1 X{0:.3f} Y{1:.3f} F{2:.1f}'.format(x,y,speed)
         self.command_queue.put_nowait(command)
 
@@ -64,24 +78,35 @@ class GcodeSender(object):
     def _start_processing(self):
         self.command_queue.put_nowait('M110 N2')
         self.command_queue.put_nowait('G90')
-        self.plotter = serial.Serial(PORT, 115200, timeout=1)
+        #self.command_queue.put_nowait('M205 T3 P145')
+        self.plotter = serial.Serial(PORT, 115200, timeout=3)
 
         self._read_and_process_and_wait_for_ok(break_on_timeout=True)
 
         while True:
-            while not self.command_queue.empty():
+            if not self.command_queue.empty():
                 command = self.command_queue.get_nowait()
                 self.command_queue.task_done()
                 self._send_line(command)
-                self._read_and_process_and_wait_for_ok()
 
-            time.sleep(0.5)
+            self._read_and_process_and_wait_for_ok()
+
+            time.sleep(0.01)
 
     def _send_line(self, line):
         command = 'N{} {} '.format(self.line_number, line)
         command = '{}*{}\n'.format(command, self._checksum(command))
+        self.sent_commands[self.line_number] = command
         print("SEND: {}".format(command))
         self.line_number += 1
+        self.plotter.write(command.encode('utf-8'))
+
+    def _resend_line(self, line_number):
+        if line_number not in self.sent_commands:
+            raise Exception("requested resend of non-existant line number {}".format(line_number))
+
+        command = self.sent_commands[line_number]
+        print("RESEND: {}".format(command))
         self.plotter.write(command.encode('utf-8'))
 
     def _read_line(self):
@@ -97,6 +122,22 @@ class GcodeSender(object):
             checksum  = checksum ^ int_char
         return checksum
 
+    def _parse_line_number_to_resend(self, response):
+        line_number = None
+
+        for regex in ["rs (\d+)", "Resend: (\d+)"]:
+            match = re.search(regex, response)
+            if not match:
+                continue
+
+            line_number = int(match.group())
+            if not line_number:
+                continue
+
+            return line_number
+
+        raise Exception("Could not parse line number from '{}'".format(response))
+
     def _read_and_process_and_wait_for_ok(self, break_on_timeout=False):
         response = self._read_line()
 
@@ -105,27 +146,26 @@ class GcodeSender(object):
 
         previous_line_number = self.line_number-1
         while not response.startswith('ok'):
-            if response.startswith(("rs {}".format(previous_line_number), "Resend:{}".format(previous_line_number))):
+            if response.startswith(('rs', 'Resend')):
                 print('resend request: {}'.format(response))
-                self.line_number = self.line_number-1
-                self._send_line(command)
+                requested_line_number = self._parse_line_number_to_resend(response)
+                self._resend_line(requested_line_number)
                 response = self._read_line()
-            elif response.startswith(('rs', 'Resend')):
-                raise Exception('requested resend of some other line number: {}'.format(response))
             elif response.startswith('!!'):
                 raise Exception('printer fault')
             elif response.startswith('//'):
                 print('comment: {}'.format(response))
                 response = self._read_line()
-            elif response.startswith('wait'):
+            elif response.startswith('EPR:'):
+                # dumping eeprom settings
                 response = self._read_line()
-                time.sleep(0.5)
+            elif response.startswith('wait'):
+                return
             elif response.startswith('start'):
                 return
             else:
                 print('unknown response: {}'.format(response))
                 response = self._read_line()
-                #raise Exception('unknown response: {}'.format(response))
 
     def stop_thread(self):
         self._stop.set()
