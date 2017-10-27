@@ -4,6 +4,12 @@ import xml.etree.ElementTree as ElementTree
 import pprint
 import zerorpc
 
+char = chr
+try:
+    char = unichr
+except:
+    pass
+
 tree = ElementTree.parse("./Padauk.ttx")
 root = tree.getroot()
 
@@ -18,10 +24,17 @@ for glyph in root.findall(".//TTGlyph"):
         points = [(float(pt.get('x')) * SCALE,abs(HEIGHT - float(pt.get('y'))) * SCALE) for pt in contour.findall('./pt')]
         contours.append(points)
 
-    letter = glyph.get('name')
-    font[letter] = contours
+    letter_name = glyph.get('name')
+    code = root.find(".//cmap//map[@name='{}']".format(letter_name)).get('code')
+    if not code:
+        break
+
+    code_string = char(int(code, 16))
+
+    font[code_string] = contours
+    #font[letter_name] = contours
     try:
-        widths[letter] = float(glyph.get('xMax')) * SCALE
+        widths[code_string] = float(glyph.get('xMax')) * SCALE
     except:
         pass
 
@@ -33,10 +46,10 @@ client.home()
 
 client.pen_lift()
 
-y_offset = 100
+y_offset = 200
 x_offset = 0
 margin = 20.0 * SCALE
-for letter in "RingRingRingRingRingRingRingBananaphone":
+for letter in "Test with space % $ # @":
     for contour in font[letter]:
         first_x, first_y = contour[0]
         client.move_to_point(first_x + x_offset, first_y + y_offset)
