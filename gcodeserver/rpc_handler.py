@@ -42,6 +42,9 @@ class RpcHandler(object):
     def center(self):
         dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=2770/2, y=875/2, speed=18000.0)
 
+    def move_to_point(self, x, y):
+        dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y, speed=18000.0)
+
     def draw(self, draw_data):
         x = (draw_data['x'] * 1166) + 802#2770
         y = draw_data['y'] * 875
