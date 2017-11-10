@@ -10,31 +10,73 @@ try:
 except:
     pass
 
-tree = ElementTree.parse("./Padauk.ttx")
-root = tree.getroot()
 
 HEIGHT = 875
-SCALE = 0.1
+MM_PER_EM = 100
+FONT = "bendable"
+
+fonts = {
+        "amplitude": "amplitude.ttx",
+        "bendable": "bendable.ttx",
+        "blox": "Blox2.ttx",
+        "consolas": "Consolas.ttx",
+        "cube": "Cube.ttx",
+        "dotty": "dotty.ttx",
+        "homeoutline": "home sweet home outline.ttx",
+        "home": "home sweet home.ttx",
+        "flesh": "intheflesh____.ttx",
+        "surprise": "surprise.ttx",
+}
+
+font_path = "./fonts/{}".format(fonts[FONT])
+tree = ElementTree.parse(font_path)
+root = tree.getroot()
 
 font = {}
 widths = {}
+
+units_per_em = float(root.findall(".//head/unitsPerEm")[0].get("value"))
+y_offset = abs(float(root.findall(".//head/yMin")[0].get("value")))
+x_offset = abs(float(root.findall(".//head/xMin")[0].get("value")))
+
 for glyph in root.findall(".//TTGlyph"):
     contours = []
     for contour in glyph.findall('./contour'):
-        points = [(float(pt.get('x')) * SCALE,abs(HEIGHT - float(pt.get('y'))) * SCALE) for pt in contour.findall('./pt')]
+        points = []
+        for pt in contour.findall('./pt'):
+            fixed_x = float(pt.get('x')) + x_offset
+            fixed_y = float(pt.get('y')) + y_offset
+            x = fixed_x / units_per_em * MM_PER_EM
+            y = fixed_y / units_per_em * MM_PER_EM
+            y = MM_PER_EM - y
+            y = y + MM_PER_EM
+
+            points.append((x,y))
         contours.append(points)
 
     letter_name = glyph.get('name')
-    code = root.find(".//cmap//map[@name='{}']".format(letter_name)).get('code')
-    if not code:
-        break
+    code = None
+    try:
+        first_map = root.findall(".//cmap_format_4")[0]
+        maps = first_map.findall("./map[@name='{}']".format(letter_name))
+        code = maps[0].get('code')
+    except:
+        pass
 
-    code_string = char(int(code, 16))
+    if not code:
+        print("Failed to find map for {}".format(letter_name))
+        continue 
+
+    if len(code) > 4:
+        #print("Failed to find single-byte code for {}".format(letter_name))
+        continue 
+
+    code_string = str(char(int(code, 16)))
 
     font[code_string] = contours
-    #font[letter_name] = contours
     try:
-        widths[code_string] = float(glyph.get('xMax')) * SCALE
+        mtx = root.findall(".//mtx[@name='{}']".format(letter_name))[0]
+        widths[code_string] = float(mtx.get('width')) / units_per_em * MM_PER_EM
     except:
         pass
 
@@ -46,10 +88,10 @@ client.home()
 
 client.pen_lift()
 
-y_offset = 200
-x_offset = 0
-margin = 20.0 * SCALE
-for letter in "Test with space % $ # @":
+y_offset = 0
+x_offset = 50
+margin = 2.0
+for letter in "Warglebargle":
     for contour in font[letter]:
         first_x, first_y = contour[0]
         client.move_to_point(first_x + x_offset, first_y + y_offset)
