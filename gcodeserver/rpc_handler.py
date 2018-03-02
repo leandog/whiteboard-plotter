@@ -45,6 +45,20 @@ class RpcHandler(object):
     def move_to_point(self, x, y):
         dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y, speed=18000.0)
 
+    def draw_full(self, draw_data):
+        x = draw_data['x'] * 2770
+        y = draw_data['y'] * 875
+        #dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y, speed=9600.0)
+        dispatcher.send(signal='MOVE_TO_POINT', sender=self, x=x, y=y, speed=18000.0)
+
+        new_lift = draw_data['lift'] == 1
+        if new_lift != self.lift:
+            self.lift = new_lift
+            if self.lift:
+                dispatcher.send(signal='PEN_LIFT', sender=self)
+            else:
+                dispatcher.send(signal='PEN_DROP', sender=self)
+
     def draw(self, draw_data):
         x = (draw_data['x'] * 1166) + 802#2770
         y = draw_data['y'] * 875

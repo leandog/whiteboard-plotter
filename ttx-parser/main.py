@@ -91,7 +91,7 @@ client.pen_lift()
 y_offset = 0
 x_offset = 50
 margin = 2.0
-for letter in "Hello world":
+for letter in "SKILLZ MATRIX":
     for contour in font[letter]:
         first_x, first_y = contour[0]
         client.move_to_point(first_x + x_offset, first_y + y_offset)
